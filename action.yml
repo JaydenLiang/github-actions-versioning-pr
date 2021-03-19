@@ -1,0 +1,17 @@
+name: 'Versioning Pull Request'
+description: 'Issue a pull request for increasing the node package version.'
+inputs:
+  version-type: # version type: major, minor, patch
+    description: 'Sematic version types: major, minor, or patch'
+    required: true
+    default: 'patch'
+  prerelease: # (pre)major, (pre)minor, (pre)patch
+    description: ''
+    required: false
+    default: ''
+outputs:
+  version-type: # id of output
+    description: 'The final version-type generated with given parameters.'
+runs:
+  using: 'node12'
+  main: 'dist/bin/index.js'

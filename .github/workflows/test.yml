@@ -1,0 +1,16 @@
+on: [push]
+
+jobs:
+  main_job:
+    runs-on: ubuntu-latest
+    name: A test job
+    steps:
+      - name: Hello world action step
+        id: hello
+        uses: JaydenLiang/github-actions-versioning-pr@v1.0.0-dev.0
+        with:
+          version-type: 'major'
+          prerelease: ''
+      # Use the output from the `hello` step
+      - name: Get the output time
+        run: echo "The version-type was ${{ steps.hello.outputs['version-type'] }}"
