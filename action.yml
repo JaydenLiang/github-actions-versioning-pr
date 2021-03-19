@@ -64,7 +64,9 @@ outputs:
   old-version:
     description: The current version found in the package.json on the base branch.
   new-version:
-    description: The new version tag.
+    description: The new version.
+  new-tag:
+    description: The new tag.
   versioning-cmd:
     description: The final npm versioning command that is applied.
 runs:

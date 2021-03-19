@@ -31,29 +31,6 @@ on:
           The base branch that the pull request is issued against.
         required: true
         default: main
-      pr-title:
-        description: >-
-          The title for the pull request. If pr-template-uri is also used, this parameter will override.
-        required: false
-      pr-body:
-        description: >-
-          The body for the pull request. If pr-template-uri is also used, this parameter will override.
-        required: false
-      pr-reviewers:
-        description: >-
-          A comma-separated list of the reviewers for the pull request.
-          If pr-template-uri is also used, this parameter will override.
-        required: false
-      pr-team-reviewers:
-        description: >-
-          A comma-separated list of the team reviewers for the pull request.
-          If pr-template-uri is also used, this parameter will override.
-        required: false
-      pr-labels:
-        description: >-
-          A comma-separated list of labels to be added to the pull request.
-        required: false
-        default: 'versioning-pr'
       pr-update-if-exist:
         description: >-
           A boolean indicator for the behavior of re-issuing a pull request from the same branch
@@ -68,18 +45,13 @@ jobs:
     steps:
       - name: versioning pr
         id: versioning-pr
-        uses: JaydenLiang/github-actions-versioning-pr@1.0.1-dev.1
+        uses: JaydenLiang/github-actions-versioning-pr@1.0.1-dev.2
         with:
           version-type: github.event.inputs.version-type
           prerelease: github.event.inputs.prerelease
           pre_id: github.event.inputs.pre_id
           pr-template-uri: github.event.inputs.pr-template-uri
           pr-base-branch: github.event.inputs.pr-base-branch
-          pr-title: github.event.inputs.pr-title
-          pr-body: github.event.inputs.pr-body
-          pr-reviewers: github.event.inputs.pr-reviewers
-          pr-team-reviewers: github.event.inputs.pr-team-reviewers
-          pr-labels: github.event.inputs.pr-labels
           pr-update-if-exist: github.event.inputs.pr-update-if-exist
       # Use the output from the `versioning-pr` step
       - name: Get the versioning-pr output
