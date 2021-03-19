@@ -1,0 +1,97 @@
+# Will be triggered either by 'pushing any tag' or 'manual trigger' with additional inputs
+name: >-
+  manual dispatch
+
+on:
+  # Run by manual trigger
+  workflow_dispatch:
+    inputs:
+      version_type:
+        description: >-
+          The type of the semver version. Accepted inputs: major, minor, patch.
+        required: true
+        default: patch
+      prerelease:
+        description: >-
+          A boolean indicator for creating a prerelease. GitHub 'pre-release' flag will also be set
+          accordingly. Accepted inputs: true, false.
+        required: false
+        default: 'false'
+      pre_id:
+        description: >-
+          A valid semver pre-release id to bump version to a pre-release version with the specific id.
+        required: false
+      pr-template-uri:
+        description: >-
+          The FQDN of the uri of the pull request template to be used. Template format can be
+          found in: examples.
+        required: false
+      pr-base-branch:
+        description: >-
+          The base branch that the pull request is issued against.
+        required: true
+        default: main
+      pr-title:
+        description: >-
+          The title for the pull request. If pr-template-uri is also used, this parameter will override.
+        required: false
+      pr-body:
+        description: >-
+          The body for the pull request. If pr-template-uri is also used, this parameter will override.
+        required: false
+      pr-reviewers:
+        description: >-
+          A comma-separated list of the reviewers for the pull request.
+          If pr-template-uri is also used, this parameter will override.
+        required: false
+      pr-team-reviewers:
+        description: >-
+          A comma-separated list of the team reviewers for the pull request.
+          If pr-template-uri is also used, this parameter will override.
+        required: false
+      pr-labels:
+        description: >-
+          A comma-separated list of labels to be added to the pull request.
+        required: false
+        default: 'versioning-pr'
+      pr-update-if-exist:
+        description: >-
+          A boolean indicator for the behavior of re-issuing a pull request from the same branch
+          to the same base. If set 'true', it will update the pull request,
+          otherwise, action will fail.
+        required: true
+        default: 'true'
+jobs:
+  main_job:
+    runs-on: ubuntu-latest
+    name: A test job
+    steps:
+      - name: versioning pr
+        id: versioning-pr
+        uses: JaydenLiang/github-actions-versioning-pr@1.0.1-dev.1
+        with:
+          version-type: github.event.inputs.version-type
+          prerelease: github.event.inputs.prerelease
+          pre_id: github.event.inputs.pre_id
+          pr-template-uri: github.event.inputs.pr-template-uri
+          pr-base-branch: github.event.inputs.pr-base-branch
+          pr-title: github.event.inputs.pr-title
+          pr-body: github.event.inputs.pr-body
+          pr-reviewers: github.event.inputs.pr-reviewers
+          pr-team-reviewers: github.event.inputs.pr-team-reviewers
+          pr-labels: github.event.inputs.pr-labels
+          pr-update-if-exist: github.event.inputs.pr-update-if-exist
+      # Use the output from the `versioning-pr` step
+      - name: Get the versioning-pr output
+        run: |
+          echo "The version-type was ${{ steps.versioning-pr.outputs['version-type'] }}\n"
+          echo "The prerelease was ${{ steps.versioning-pr.outputs['prerelease'] }}\n"
+          echo "The pre_id was ${{ steps.versioning-pr.outputs['pre_id'] }}\n"
+          echo "The pr-template-uri was ${{ steps.versioning-pr.outputs['pr-template-uri'] }}\n"
+          echo "The pr-base-branch was ${{ steps.versioning-pr.outputs['pr-base-branch'] }}\n"
+          echo "The pr-title was ${{ steps.versioning-pr.outputs['pr-title'] }}\n"
+          echo "The pr-body was ${{ steps.versioning-pr.outputs['pr-body'] }}\n"
+          echo "The pr-reviewers was ${{ steps.versioning-pr.outputs['pr-reviewers'] }}\n"
+          echo "The pr-team-reviewers was ${{ steps.versioning-pr.outputs['pr-team-reviewers'] }}\n"
+          echo "The pr-labels was ${{ steps.versioning-pr.outputs['pr-labels'] }}\n"
+          echo "The pr-update-if-exist was ${{ steps.versioning-pr.outputs['pr-update-if-exist'] }}\n"
