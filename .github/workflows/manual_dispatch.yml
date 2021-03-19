@@ -47,23 +47,23 @@ jobs:
         id: versioning-pr
         uses: JaydenLiang/github-actions-versioning-pr@1.0.1-dev.2
         with:
-          version-type: github.event.inputs.version-type
-          prerelease: github.event.inputs.prerelease
-          pre_id: github.event.inputs.pre_id
-          pr-template-uri: github.event.inputs.pr-template-uri
-          pr-base-branch: github.event.inputs.pr-base-branch
-          pr-update-if-exist: github.event.inputs.pr-update-if-exist
+          version-type: ${{ github.event.inputs.version-type }}
+          prerelease: ${{ github.event.inputs.prerelease }}
+          pre_id: ${{ github.event.inputs.pre_id }}
+          pr-template-uri: ${{ github.event.inputs.pr-template-uri }}
+          pr-base-branch: ${{ github.event.inputs.pr-base-branch }}
+          pr-update-if-exist: ${{ github.event.inputs.pr-update-if-exist }}
       # Use the output from the `versioning-pr` step
       - name: Get the versioning-pr output
         run: |
-          echo "The version-type was ${{ steps.versioning-pr.outputs['version-type'] }}\n"
-          echo "The prerelease was ${{ steps.versioning-pr.outputs['prerelease'] }}\n"
-          echo "The pre_id was ${{ steps.versioning-pr.outputs['pre_id'] }}\n"
-          echo "The pr-template-uri was ${{ steps.versioning-pr.outputs['pr-template-uri'] }}\n"
-          echo "The pr-base-branch was ${{ steps.versioning-pr.outputs['pr-base-branch'] }}\n"
-          echo "The pr-title was ${{ steps.versioning-pr.outputs['pr-title'] }}\n"
-          echo "The pr-body was ${{ steps.versioning-pr.outputs['pr-body'] }}\n"
-          echo "The pr-reviewers was ${{ steps.versioning-pr.outputs['pr-reviewers'] }}\n"
-          echo "The pr-team-reviewers was ${{ steps.versioning-pr.outputs['pr-team-reviewers'] }}\n"
-          echo "The pr-labels was ${{ steps.versioning-pr.outputs['pr-labels'] }}\n"
-          echo "The pr-update-if-exist was ${{ steps.versioning-pr.outputs['pr-update-if-exist'] }}\n"
+          echo "The version-type was ${{ steps.['versioning-pr'].outputs['version-type'] }}"
+          echo "The prerelease was ${{ steps.['versioning-pr'].outputs['prerelease'] }}"
+          echo "The pre_id was ${{ steps.['versioning-pr'].outputs['pre_id'] }}"
+          echo "The pr-template-uri was ${{ steps.['versioning-pr'].outputs['pr-template-uri'] }}"
+          echo "The pr-base-branch was ${{ steps.['versioning-pr'].outputs['pr-base-branch'] }}"
+          echo "The pr-title was ${{ steps.['versioning-pr'].outputs['pr-title'] }}"
+          echo "The pr-body was ${{ steps.['versioning-pr'].outputs['pr-body'] }}"
+          echo "The pr-reviewers was ${{ steps.['versioning-pr'].outputs['pr-reviewers'] }}"
+          echo "The pr-team-reviewers was ${{ steps.['versioning-pr'].outputs['pr-team-reviewers'] }}"
+          echo "The pr-labels was ${{ steps.['versioning-pr'].outputs['pr-labels'] }}"
+          echo "The pr-update-if-exist was ${{ steps.['versioning-pr'].outputs['pr-update-if-exist'] }}"
