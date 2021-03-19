@@ -45,7 +45,7 @@ jobs:
     steps:
       - name: versioning pr
         id: versioning-pr
-        uses: JaydenLiang/github-actions-versioning-pr@1.0.1-dev.7
+        uses: JaydenLiang/github-actions-versioning-pr@1.0.1-dev.8
         with:
           version-type: ${{ github.event.inputs.version-type }}
           prerelease: ${{ github.event.inputs.prerelease }}
@@ -56,14 +56,9 @@ jobs:
       # Use the output from the `versioning-pr` step
       - name: Get the versioning-pr output
         run: |
-          echo "The version-type was ${{ steps['versioning-pr'].outputs['version-type'] }}"
-          echo "The prerelease was ${{ steps['versioning-pr'].outputs['prerelease'] }}"
-          echo "The pre_id was ${{ steps['versioning-pr'].outputs['pre_id'] }}"
-          echo "The pr-template-uri was ${{ steps['versioning-pr'].outputs['pr-template-uri'] }}"
-          echo "The pr-base-branch was ${{ steps['versioning-pr'].outputs['pr-base-branch'] }}"
-          echo "The pr-title was ${{ steps['versioning-pr'].outputs['pr-title'] }}"
-          echo "The pr-body was ${{ steps['versioning-pr'].outputs['pr-body'] }}"
-          echo "The pr-reviewers was ${{ steps['versioning-pr'].outputs['pr-reviewers'] }}"
-          echo "The pr-team-reviewers was ${{ steps['versioning-pr'].outputs['pr-team-reviewers'] }}"
-          echo "The pr-labels was ${{ steps['versioning-pr'].outputs['pr-labels'] }}"
-          echo "The pr-update-if-exist was ${{ steps['versioning-pr'].outputs['pr-update-if-exist'] }}"
+          echo "The version-type was ${{ steps['versioning-pr'].outputs['base-branch'] }}"
+          echo "The prerelease was ${{ steps['versioning-pr'].outputs['incoming-branch'] }}"
+          echo "The pre_id was ${{ steps['versioning-pr'].outputs['old-version'] }}"
+          echo "The pr-template-uri was ${{ steps['versioning-pr'].outputs['new-version'] }}"
+          echo "The pr-base-branch was ${{ steps['versioning-pr'].outputs['new-tag'] }}"
+          echo "The pr-title was ${{ steps['versioning-pr'].outputs['versioning-cmd'] }}"
