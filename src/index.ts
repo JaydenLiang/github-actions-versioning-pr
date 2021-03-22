@@ -1,44 +1,109 @@
 import * as core from '@actions/core';
 import * as github from '@actions/github';
+import axios, { AxiosRequestConfig } from 'axios';
+import { parse as yamlParse } from 'yaml';
 
-try {
-    const versionType = core.getInput('version-type');
-    const prerelease = core.getInput('prerelease');
-    const preId = core.getInput('pre-id');
-    const prBaseBranch = core.getInput('pr-base-branch');
-    const prTemplate = core.getInput('pr-template');
-    // const prIncomingBranch = core.getInput('pr-base-branch');
-    const prTitle = core.getInput('pr-title');
-    const prBody = core.getInput('pr-body');
-    const prReviewers = core.getInput('pr-reviewers');
-    const prTeamReviewers = core.getInput('pr-team-reviewers');
-    const prLabels = core.getInput('pr-labels');
-    const prUpdateIfExist = core.getInput('pr-update-if-exist');
-    // const repo = ``;
-    // let basePackageJson: { [key: string]: unknown };
-    // console.log(`Fetching package.json from repo: ${}`)
-    const time = (new Date()).toTimeString();
-    console.log('time:', time);
-    console.log('input value for version-type:', versionType);
-    console.log('input value for prerelease:', prerelease);
-    console.log('input value for preId:', preId);
-    console.log('input value for prBaseBranch:', prBaseBranch);
-    console.log('input value for prTemplate:', prTemplate);
-    console.log('input value for prTitle:', prTitle);
-    console.log('input value for prBody:', prBody);
-    console.log('input value for prReviewers:', prReviewers);
-    console.log('input value for prTeamReviewers:', prTeamReviewers);
-    console.log('input value for prLabels:', prLabels);
-    console.log('input value for prUpdateIfExist:', prUpdateIfExist);
-    core.setOutput('base-branch', prBaseBranch);
-    core.setOutput('incoming-branch', 'not-set-yet');
-    core.setOutput('old-version', 'not-set-yet');
-    core.setOutput('new-version', 'not-set-yet');
-    core.setOutput('new-tag', 'not-set-yet');
-    core.setOutput('versioning-cmd', 'not-set-yet');
-    // Get the JSON webhook payload for the event that triggered the workflow
-    const payload = JSON.stringify(github.context.payload, null, 4);
-    console.log('payload:', payload);
-} catch (error) {
-    core.setFailed((error as Error).message);
+interface PrTemplate {
+    title: string;
+    description?: string;
+    preset?: {
+        reviewers?: string[];
+        'team-reviewers'?: string[];
+        labels?: string[];
+    }
 }
+
+async function fetchPackageJson(owner: string, repo: string, branch: string): Promise<{ [key: string]: unknown }> {
+    const basePackageJsonUrl = `https://raw.githubusercontent.com/` +
+        `${owner}/${repo}/${branch}/package.json`;
+
+    const options: AxiosRequestConfig = {
+        method: 'GET',
+        headers: {
+            Accept: 'application/json'
+        },
+        url: basePackageJsonUrl,
+        timeout: 30000
+    };
+    const response = await axios(options);
+    return JSON.parse(response.data);
+}
+
+async function fetchPrTemplate(uri: string): Promise<PrTemplate> {
+    const options: AxiosRequestConfig = {
+        method: 'GET',
+        headers: {
+            Accept: 'text/plain'
+        },
+        url: uri,
+        timeout: 30000
+    };
+    const response = await axios(options);
+    return yamlParse(response.data) as PrTemplate;
+}
+
+async function main(): Promise<void> {
+    try {
+        const [owner, repo] = github.context.payload.repository.full_name.split('/');
+        const [, refType, refName] = String(github.context.payload.ref).match(/(?<=refs\/)([^\/]*)\/\S*/gm) || [];
+        const isBranch = refType === 'heads';
+        // const isTag = refType === 'tags';
+        const baseBranch = core.getInput('base-branch');
+        const headBranch = isBranch && refName;
+        const isPrerelease = core.getInput('is-prerelease');
+        const prCreateDraft = core.getInput('pr-create-draft');
+        const prUpdateIfExist = core.getInput('pr-update-if-exist');
+        const prTemplateUri = core.getInput('string');
+        let prTitle: string = core.getInput('pr-title');
+        let prDescription: string = core.getInput('pr-description');
+        let prReviewers: string[] = core.getInput('pr-reviewers').split(',') || [];
+        let prTeamReviewers = core.getInput('pr-team-reviewers').split(',') || [];
+        let prLabels = core.getInput('pr-labels').split(',') || [];
+        // fetch the old version
+        console.log(`Fetching package.json from: ${owner}/${repo}/${baseBranch}`);
+        const basePackageJson: { [key: string]: unknown } = await fetchPackageJson(owner, repo, baseBranch);
+        const baseVersion = basePackageJson.version as string;
+        // fetch the new version
+        console.log(`Fetching package.json from: ${owner}/${repo}/${headBranch}`);
+        const headPackageJson: { [key: string]: unknown } = await fetchPackageJson(owner, repo, headBranch);
+        const headVersion = headPackageJson.version as string;
+        // fetch pr-template yaml if specified
+        if (prTemplateUri) {
+            const templateYaml = await fetchPrTemplate(prTemplateUri);
+            prTitle = prTitle || (templateYaml.title);
+            prDescription = prDescription || templateYaml.description;
+            // NOTE: optional chaining works in NodeJS 12 and higher version only
+            if (prReviewers.length === 0 && templateYaml.preset?.reviewers) {
+                prReviewers = templateYaml.preset.reviewers;
+            }
+            if (prTeamReviewers.length === 0 && templateYaml.preset?.['team-reviewers']) {
+                prTeamReviewers = templateYaml.preset['team-reviewers'];
+            }
+            if (prLabels.length === 0 && templateYaml.preset?.labels) {
+                prLabels = templateYaml.preset.labels;
+            }
+        }
+        // replace place holders in template
+        const replace = (str: string): string => {
+            return str
+                .replace(new RegExp('${base-version}', 'g'), baseVersion)
+                .replace(new RegExp('${head-version}', 'g'), headVersion)
+                .replace(new RegExp('${is-prerelease}', 'g'), isPrerelease);
+        };
+        prTitle = replace(prTitle);
+        prDescription = replace(prDescription);
+        console.log('pr title:', prTitle, 'pr descriptioin:', prDescription)
+        core.setOutput('base-branch', baseBranch);
+        core.setOutput('base-version', baseVersion);
+        core.setOutput('is-prerelease', isPrerelease);
+        core.setOutput('pr-create-draft', prCreateDraft);
+        core.setOutput('pr-update-if-exist', prUpdateIfExist);
+        // Get the JSON webhook payload for the event that triggered the workflow
+        const payload = JSON.stringify(github.context.payload, null, 4);
+        console.log('payload:', payload);
+    } catch (error) {
+        core.setFailed((error as Error).message);
+    }
+}
+
+main();

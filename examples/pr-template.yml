@@ -1,13 +1,19 @@
-title: Bumping version to ${new-version}
-body: >-
-  This pull request is automatically issued to bump version of ${base-branch} to ${new-version} for a new release.
+title: Bumping version to ${head-version}
+description: >-
+  This pull request is automatically issued to bump version of ${base-branch} to ${head-version} for a new release.
 
   The following information about this pull request can be used in a chained CD pipeline.
 
-  *old-version: ${old-version}
-  *new-version: ${new-version}
+  *base-version: ${base-version}
+  *head-version: ${head-version}
   *is-prerelease: ${is-prerelease}
-  *base-branch: ${base-branch}
-  *incoming-branch: ${incoming-branch}
-  *pr-number: ${pr-number}
-  *pr-url: ${pr-url}
+preset:
+  reviewers:
+    - reviewer1
+    - reviewer2
+  team-reviewers:
+    - team-reviewer1
+    - team-reviewer2
+  labels:
+    - label1
+    - label2

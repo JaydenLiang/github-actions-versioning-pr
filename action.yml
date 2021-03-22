@@ -1,38 +1,42 @@
-name: 'Versioning Pull Request'
-description: 'Issue a pull request for increasing the node package version.'
+name: 'Create versioning pull request'
+description: 'Create a pull request for increasing the node package version.'
 inputs:
-  version-type:
+  base-branch:
     description: >-
-      The type of the semver version. Accepted inputs: major, minor, patch.
+      The base branch that the pull request is issued against.
     required: true
-    default: patch
+    default: main
   prerelease:
     description: >-
       A boolean indicator for creating a prerelease. GitHub 'pre-release' flag will also be set
       accordingly. Accepted inputs: true, false.
     required: false
     default: 'false'
-  pre_id:
+  pr-create-draft:
     description: >-
-      A valid semver pre-release id to bump version to a pre-release version with the specific id.
+      A boolean indicator for whether create a draft pull request or actual one.
     required: false
-  pr-base-branch:
+    default: 'false'
+  pr-update-if-exist:
     description: >-
-      The base branch that the pull request is issued against.
-    required: true
-    default: main
+      A boolean indicator for the behavior of re-issuing a pull request from the same branch
+      to the same base. If set 'true', it will update the pull request,
+      otherwise, action will fail.
+    required: false
+    default: 'true'
   pr-template-uri:
     description: >-
       The FQDN of the uri of the pull request template to be used. Template format can be
       found in: examples.
     required: false
+    default: 'examples/pr-template.yml'
   pr-title:
     description: >-
       The title for the pull request. If pr-template-uri is also used, this parameter will override.
     required: false
-  pr-body:
+  pr-description:
     description: >-
-      The body for the pull request. If pr-template-uri is also used, this parameter will override.
+      The description for the pull request. If pr-template-uri is also used, this parameter will override.
     required: false
   pr-reviewers:
     description: >-
@@ -49,26 +53,21 @@ inputs:
       A comma-separated list of labels to be added to the pull request.
     required: false
     default: 'versioning-pr'
-  pr-update-if-exist:
-    description: >-
-      A boolean indicator for the behavior of re-issuing a pull request from the same branch
-      to the same base. If set 'true', it will update the pull request,
-      otherwise, action will fail.
-    required: true
-    default: 'true'
 outputs:
   base-branch:
     description: The base branch for this pull request.
-  incoming-branch:
-    description: The incoming branch for this pull request.
-  old-version:
-    description: The current version found in the package.json on the base branch.
-  new-version:
-    description: The new version.
-  new-tag:
-    description: The new tag.
-  versioning-cmd:
-    description: The final npm versioning command that is applied.
+  head-branch:
+    description: The head branch for this pull request.
+  base-version:
+    description: The version found in the package.json on the base branch.
+  head-version:
+    description: The version found in the package.json on the head branch.
+  is-prerelease:
+    description: A boolean indicator for the intension for the GitHub release 'prerelease' flag.
+  is-pr-draft:
+    description: A boolean indicator for the draft pull request.
+  pull-request-url:
+    description: The new pull request url.
 runs:
   using: 'node12'
   main: 'dist/bin/index.js'
