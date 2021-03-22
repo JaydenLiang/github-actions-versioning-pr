@@ -23,7 +23,7 @@ on:
         required: false
       pr-template-uri:
         description: >-
-          The FQDN of the uri of the pull request template to be used. Template format can be
+          The location (relative to the project rool) of the pull request template to be used. Template format can be
           found in: examples.
         required: false
         default: examples/pr-template.yml
@@ -51,7 +51,7 @@ jobs:
     steps:
       - name: versioning pr
         id: versioning-pr
-        uses: JaydenLiang/github-actions-versioning-pr@1.0.1-dev.13
+        uses: JaydenLiang/github-actions-versioning-pr@1.0.1-dev.14
         with:
           base-branch: ${{ github.event.inputs.base-branch }}
           prerelease: ${{ github.event.inputs.prerelease }}
