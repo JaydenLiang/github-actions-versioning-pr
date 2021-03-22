@@ -27,7 +27,7 @@ on:
           found in: examples.
         required: false
         default: examples/pr-template.yml
-      pr-base-branch:
+      base-branch:
         description: >-
           The base branch that the pull request is issued against.
         required: true
@@ -51,7 +51,7 @@ jobs:
     steps:
       - name: versioning pr
         id: versioning-pr
-        uses: JaydenLiang/github-actions-versioning-pr@1.0.1-dev.15
+        uses: JaydenLiang/github-actions-versioning-pr@1.0.1-dev.16
         with:
           base-branch: ${{ github.event.inputs.base-branch }}
           prerelease: ${{ github.event.inputs.prerelease }}
