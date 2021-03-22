@@ -95,9 +95,11 @@ async function main(): Promise<void> {
         console.log('pr title:', prTitle, 'pr descriptioin:', prDescription)
         core.setOutput('base-branch', baseBranch);
         core.setOutput('base-version', baseVersion);
+        core.setOutput('head-branch', baseBranch);
+        core.setOutput('head-version', baseVersion);
         core.setOutput('is-prerelease', isPrerelease);
         core.setOutput('pr-create-draft', prCreateDraft);
-        core.setOutput('pr-update-if-exist', prUpdateIfExist);
+        core.setOutput('pull-request-url', 'not-yet-set');
         // Get the JSON webhook payload for the event that triggered the workflow
         const payload = JSON.stringify(github.context.payload, null, 4);
         console.log('payload:', payload);

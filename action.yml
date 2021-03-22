@@ -29,7 +29,7 @@ inputs:
       The FQDN of the uri of the pull request template to be used. Template format can be
       found in: examples.
     required: false
-    default: 'examples/pr-template.yml'
+    default: examples/pr-template.yml
   pr-title:
     description: >-
       The title for the pull request. If pr-template-uri is also used, this parameter will override.
