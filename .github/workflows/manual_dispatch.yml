@@ -51,7 +51,7 @@ jobs:
     steps:
       - name: versioning pr
         id: versioning-pr
-        uses: JaydenLiang/github-actions-versioning-pr@1.0.1-dev.12
+        uses: JaydenLiang/github-actions-versioning-pr@1.0.1-dev.13
         with:
           base-branch: ${{ github.event.inputs.base-branch }}
           prerelease: ${{ github.event.inputs.prerelease }}
