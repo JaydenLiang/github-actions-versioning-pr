@@ -110,6 +110,7 @@ async function main(): Promise<void> {
                 prLabels = templateYaml.preset.labels;
             }
         }
+        console.log('prAssignees:', prAssignees);
         console.log('prReviewers:', prReviewers);
         console.log('prTeamReviewers:', prTeamReviewers);
         console.log('prLabels:', prLabels);
@@ -194,12 +195,14 @@ async function main(): Promise<void> {
             await Promise.allSettled(
                 prAssignees.map(async (assignee) => {
                     let neg = 'not ';
+                    console.log(`Checking before adding assignee: ${assignee}...`);
                     const res = await octokit.issues.checkUserCanBeAssigned({
                         owner: owner,
                         repo: repo,
                         assignee: assignee
                     });
-                    if (res.headers.status === String(StatusCodes.NO_CONTENT)) {
+                    console.log('assignee checking result:', JSON.stringify(res, null, 4));
+                    if (res.status === StatusCodes.NO_CONTENT) {
                         assignees.push(assignee);
                         neg = '';
                     }
