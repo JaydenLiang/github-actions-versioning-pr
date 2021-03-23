@@ -17640,21 +17640,22 @@ async function main() {
         core.setOutput('head-version', baseVersion);
         core.setOutput('is-prerelease', isPrerelease);
         core.setOutput('pr-create-draft', prCreateDraft);
+        // get the pr with the same head and base
+        const prListResponse = await octokit.pulls.list({
+            owner: owner,
+            repo: repo,
+            head: headBranch,
+            base: baseBranch
+        });
+        let pullRequest = prListResponse.data.length && prListResponse.data[0];
         // additional checking if need to check fail-if-exist
         console.log('Action [pr-fail-if-exist] is set: ' +
             `${prFailIfExist === 'true' && 'true' || 'false'}`);
         if (prFailIfExist === 'true') {
-            // get the pr with the same head and base
-            const prListResponse = await octokit.pulls.list({
-                owner: owner,
-                repo: repo,
-                head: headBranch,
-                base: baseBranch
-            });
             // pr found
-            if (prListResponse.data.length) {
+            if (pullRequest) {
                 // pr is closed
-                if (prListResponse.data[0].state === 'closed') {
+                if (pullRequest.state === 'closed') {
                     throw new Error(`The pull request to base branch: ${baseBranch}` +
                         ` from head branch: ${headBranch} has been closed.`);
                 }
@@ -17664,18 +17665,33 @@ async function main() {
                 }
             }
         }
+        // if an existing pr is found, update it. otherwise, create one
+        if (pullRequest) {
+            const prUpdateResponse = await octokit.pulls.update({
+                owner: owner,
+                repo: repo,
+                pull_number: pullRequest.number,
+                title: prTitle || undefined,
+                body: prDescription || undefined,
+                state: 'open', // reopen if prviously closed.
+            });
+            pullRequest = prUpdateResponse.data;
+        }
         // create a pr with the above title and description.
-        const prCreateResponse = await octokit.pulls.create({
-            owner: owner,
-            repo: repo,
-            head: headBranch,
-            base: baseBranch,
-            title: prTitle || undefined,
-            body: prDescription || undefined,
-            draft: prCreateDraft === 'true'
-        });
-        core.setOutput('pull-request-number', prCreateResponse.data.number);
-        core.setOutput('pull-request-url', prCreateResponse.url);
+        else {
+            const prCreateResponse = await octokit.pulls.create({
+                owner: owner,
+                repo: repo,
+                head: headBranch,
+                base: baseBranch,
+                title: prTitle || undefined,
+                body: prDescription || undefined,
+                draft: prCreateDraft === 'true'
+            });
+            pullRequest = prCreateResponse.data;
+        }
+        core.setOutput('pull-request-number', pullRequest.number);
+        core.setOutput('pull-request-url', pullRequest.url);
         // add assignee if needed
         const assignees = [];
         if (prAssignees.length) {
@@ -17698,7 +17714,7 @@ async function main() {
                 await octokit.issues.addAssignees({
                     owner: owner,
                     repo: repo,
-                    issue_number: prCreateResponse.data.number,
+                    issue_number: pullRequest.number,
                     assignees: prAssignees
                 });
             }
@@ -17710,7 +17726,7 @@ async function main() {
             await octokit.pulls.requestReviewers({
                 owner: owner,
                 repo: repo,
-                pull_number: prCreateResponse.data.number,
+                pull_number: pullRequest.number,
                 reviewers: prReviewers,
                 team_reviewers: prTeamReviewers
             });
@@ -17723,7 +17739,7 @@ async function main() {
             await octokit.issues.addLabels({
                 owner: owner,
                 repo: repo,
-                issue_number: prCreateResponse.data.number,
+                issue_number: pullRequest.number,
                 labels: prLabels
             });
         }
