@@ -1,12 +1,12 @@
 body: >-
   Useful transitional information about this pull request. Please do not modify or delete.
 
-  * base-version: ${baseVersion}
+  * base-version: ${base-version}
 
-  * base-branch: ${baseBranch}
+  * base-branch: ${base-branch}
 
-  * head-version: ${headVersion}
+  * head-version: ${head-version}
 
-  * head-branch: ${headBranch}
+  * head-branch: ${head-branch}
 
-  * is-prerelease: ${isPrerelease}
+  * is-prerelease: ${is-prerelease}
