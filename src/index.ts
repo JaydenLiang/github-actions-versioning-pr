@@ -195,14 +195,14 @@ async function main(): Promise<void> {
             await Promise.allSettled(
                 prAssignees.map(async (assignee) => {
                     let neg = 'not ';
-                    console.log(`Checking before adding assignee: ${assignees}...`);
+                    console.log(`Checking before adding assignee: ${assignee}...`);
                     const res = await octokit.issues.checkUserCanBeAssigned({
                         owner: owner,
                         repo: repo,
                         assignee: assignee
                     });
                     console.log('assignee checking result:', JSON.stringify(res, null, 4));
-                    if (res.headers.status === String(StatusCodes.NO_CONTENT)) {
+                    if (res.status === StatusCodes.NO_CONTENT) {
                         assignees.push(assignee);
                         neg = '';
                     }
