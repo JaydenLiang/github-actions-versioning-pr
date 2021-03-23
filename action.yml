@@ -6,37 +6,16 @@ inputs:
       The base branch that the pull request is issued against.
     required: true
     default: main
+  github-token:
+    description: >-
+      The GitHub token to authorize actions on behalf of users.
+    required: true
   prerelease:
     description: >-
       A boolean indicator for creating a prerelease. GitHub 'pre-release' flag will also be set
       accordingly. Accepted inputs: true, false.
     required: false
     default: 'false'
-  pr-create-draft:
-    description: >-
-      A boolean indicator for whether create a draft pull request or actual one.
-    required: false
-    default: 'false'
-  pr-fail-if-exist:
-    description: >-
-      A boolean indicator for the behavior of re-issuing a pull request from the same branch
-          to the same base. If set 'true', the action will fail.
-    required: false
-    default: 'true'
-  pr-template-uri:
-    description: >-
-      The FQDN of the uri of the pull request template to be used. Template format can be
-      found in: examples.
-    required: false
-    default: examples/pr-template.yml
-  pr-title:
-    description: >-
-      The title for the pull request. If pr-template-uri is also used, this parameter will override.
-    required: false
-  pr-description:
-    description: >-
-      The description for the pull request. If pr-template-uri is also used, this parameter will override.
-    required: false
   pr-assignees:
     description: >-
       A comma-separated list of the assignees (usernames) for the pull request.
@@ -44,6 +23,28 @@ inputs:
       If none should be set, giving a single comma as value to this field.
       Only users with push access can add assignees to an issue. Assignees are silently ignored otherwise.
     required: false
+  pr-create-draft:
+    description: >-
+      A boolean indicator for whether create a draft pull request or actual one.
+    required: false
+    default: 'false'
+  pr-description:
+    description: >-
+      The description for the pull request. If pr-template-uri is also used, this parameter will override.
+    required: false
+  pr-fail-if-exist:
+    description: >-
+      A boolean indicator for the behavior of re-issuing a pull request from the same branch
+          to the same base. If set 'true', the action will fail.
+    required: false
+    default: 'true'
+  pr-labels:
+    description: >-
+      A comma-separated list of labels to be added to the pull request.
+      If pr-template-uri is also used, this parameter will override the 'labels' field in the template.
+      If none should be set, giving a single comma as value to this field.
+    required: false
+    default: 'versioning-pr'
   pr-reviewers:
     description: >-
       A comma-separated list of the reviewers (usernames) for the pull request.
@@ -56,13 +57,16 @@ inputs:
       If pr-template-uri is also used, this parameter will override the 'team-reviewers' field in the template.
       If none should be set, giving a single comma as value to this field.
     required: false
-  pr-labels:
+  pr-template-uri:
     description: >-
-      A comma-separated list of labels to be added to the pull request.
-      If pr-template-uri is also used, this parameter will override the 'labels' field in the template.
-      If none should be set, giving a single comma as value to this field.
+      The FQDN of the uri of the pull request template to be used. Template format can be
+      found in: examples.
     required: false
-    default: 'versioning-pr'
+    default: examples/pr-template.yml
+  pr-title:
+    description: >-
+      The title for the pull request. If pr-template-uri is also used, this parameter will override.
+    required: false
 outputs:
   base-branch:
     description: The base branch for this pull request.

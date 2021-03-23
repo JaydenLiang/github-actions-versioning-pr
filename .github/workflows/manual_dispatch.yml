@@ -50,9 +50,10 @@ jobs:
     steps:
       - name: versioning pr
         id: versioning-pr
-        uses: JaydenLiang/github-actions-versioning-pr@1.0.1-dev.19
+        uses: JaydenLiang/github-actions-versioning-pr@1.0.1-dev.20
         with:
           base-branch: ${{ github.event.inputs.base-branch }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
           prerelease: ${{ github.event.inputs.prerelease }}
           pr-create-draft: ${{ github.event.inputs.pr-create-draft }}
           pr-fail-if-exist: ${{ github.event.inputs.pr-fail-if-exist }}
