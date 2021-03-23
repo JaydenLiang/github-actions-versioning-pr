@@ -1,16 +1,15 @@
+# available template place holders:
+# ${base-branch}
+# ${base-version}
+# ${head-branch}
+# ${head-version}
+# ${is-prerelease}
+# ${is-draft-pr}
 title: Bumping version to ${head-version}
 description: >-
   This pull request is automatically issued to bump version of branch: ${base-branch} to ${head-version} for a new release.
 preset:
-  assignees:
-    - assignee1
-    - assignee2
-  reviewers:
-    - reviewer1
-    - reviewer2
-  team-reviewers:
-    - team-reviewer1
-    - team-reviewer2
-  labels:
-    - label1
-    - label2
+  assignees: # array of GitHub login
+  reviewers: # array of GitHub login
+  team-reviewers: # array of GitHub login
+  labels: # array of string literal

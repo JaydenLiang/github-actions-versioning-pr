@@ -129,13 +129,12 @@ async function main(): Promise<void> {
         };
         prTitle = replace(prTitle);
         prDescription = replace(prDescription);
-        console.log('pr title:', prTitle, 'pr descriptioin:', prDescription)
         core.setOutput('base-branch', baseBranch);
         core.setOutput('base-version', baseVersion);
         core.setOutput('head-branch', baseBranch);
         core.setOutput('head-version', baseVersion);
         core.setOutput('is-prerelease', isPrerelease);
-        core.setOutput('pr-create-draft', prCreateDraft);
+        core.setOutput('is-draft-pr', prCreateDraft);
 
         // get the pr with the same head and base
         const prListResponse = await octokit.pulls.list({
@@ -200,7 +199,6 @@ async function main(): Promise<void> {
         const [infoComment] = prListCommentResponse.data.filter(comment => {
             return comment.user.login === 'github-actions[bot]' || comment.user.id === 41898282;
         });
-        console.log(`info comment: `, JSON.stringify(infoComment, null, 4));
 
         // info comment is found, update it.
         if (infoComment) {
@@ -234,7 +232,6 @@ async function main(): Promise<void> {
                         repo: repo,
                         assignee: assignee
                     });
-                    console.log('assignee checking result:', JSON.stringify(res, null, 4));
                     if (res.status === StatusCodes.NO_CONTENT) {
                         assignees.push(assignee);
                         neg = '';
