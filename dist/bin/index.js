@@ -17543,7 +17543,7 @@ async function fetchPackageJson(owner, repo, branch) {
     const response = await axios_1.default(options);
     return response.data;
 }
-async function loadPrTemplate(owner, repo, branch, filePath) {
+async function loadTemplate(owner, repo, branch, filePath) {
     const url = `https://raw.githubusercontent.com/` +
         `${owner}/${repo}/${branch}/${filePath}`;
     const options = {
@@ -17602,7 +17602,7 @@ async function main() {
             console.log('prTemplateUri:', prTemplateUri);
             // NOTE: the template must reside in your GitHub repository, either in
             // the default branch or the head branch
-            const templateYaml = await loadPrTemplate(owner, repo, headBranch, prTemplateUri);
+            const templateYaml = await loadTemplate(owner, repo, headBranch, prTemplateUri);
             prTitle = prTitle || (templateYaml.title);
             prDescription = prDescription || templateYaml.description;
             if (prReviewers.length === 0 && templateYaml.preset && templateYaml.preset.reviewers) {
@@ -17684,24 +17684,38 @@ async function main() {
         core.setOutput('pull-request-number', pullRequest.number);
         core.setOutput('pull-request-url', pullRequest.url);
         // add or update a review comment to store useful transitional informations.
-        let comment = `Transitional information. Please do not modify or delete.
-
-            * is-prerelease: ${isPrerelease}
-            `;
-        // get comments and filter by author
+        const infoCommentTemplate = await loadTemplate(owner, repo, headBranch, 'templates/pr-info-comment.yml');
+        const infoCommentBody = replace(infoCommentTemplate.body);
+        // get comments and filter by github bot author:
+        // login: github-actions[bot]
+        // id: 41898282
         const prListCommentResponse = await octokit.issues.listComments({
             owner: owner,
             repo: repo,
             issue_number: pullRequest.number
         });
-        console.log(`comments: `, JSON.stringify(prListCommentResponse.data, null, 4));
-        // add a comment
-        await octokit.issues.createComment({
-            owner: owner,
-            repo: repo,
-            issue_number: pullRequest.number,
-            body: comment
+        const [infoComment] = prListCommentResponse.data.filter(comment => {
+            return comment.user.login === 'github-actions[bot]' || comment.user.id === 41898282;
         });
+        console.log(`info comment: `, JSON.stringify(infoComment, null, 4));
+        // info comment is found, update it.
+        if (infoComment) {
+            await octokit.issues.updateComment({
+                owner: owner,
+                repo: repo,
+                comment_id: infoComment.id,
+                body: infoCommentBody
+            });
+        }
+        // otherwise, add a comment
+        else {
+            await octokit.issues.createComment({
+                owner: owner,
+                repo: repo,
+                issue_number: pullRequest.number,
+                body: infoCommentBody
+            });
+        }
         // add assignee if needed
         const assignees = [];
         if (prAssignees.length) {

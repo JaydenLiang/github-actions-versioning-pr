@@ -50,7 +50,7 @@ jobs:
     steps:
       - name: versioning pr
         id: versioning-pr
-        uses: JaydenLiang/github-actions-versioning-pr@1.0.1-dev.29
+        uses: JaydenLiang/github-actions-versioning-pr@1.0.1-dev.30
         with:
           base-branch: ${{ github.event.inputs.base-branch }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
@@ -61,7 +61,7 @@ jobs:
           pr-labels: ${{ github.event.inputs.pr-labels }}
           pr-reviewers: ${{ github.event.inputs.pr-reviewers }}
           pr-team-reviewers: ${{ github.event.inputs.pr-team-reviewers }}
-          pr-template-uri: examples/pr-template.yml
+          pr-template-uri: templates/pr-template.yml
       # Use the output from the `versioning-pr` step
       - name: Get the versioning-pr output
         run: |

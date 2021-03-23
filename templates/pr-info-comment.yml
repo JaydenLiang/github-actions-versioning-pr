@@ -1,0 +1,12 @@
+body: >-
+  Useful transitional information about this pull request. Please do not modify or delete.
+
+  * base-version: ${baseVersion}
+
+  * base-branch: ${baseBranch}
+
+  * head-version: ${headVersion}
+
+  * head-branch: ${headBranch}
+
+  * is-prerelease: ${isPrerelease}
