@@ -8,6 +8,9 @@ description: >-
   *head-version: ${head-version}
   *is-prerelease: ${is-prerelease}
 preset:
+  assignees:
+    - assignee1
+    - assignee2
   reviewers:
     - reviewer1
     - reviewer2

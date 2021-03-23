@@ -1,13 +1,14 @@
 import * as core from '@actions/core';
 import * as github from '@actions/github';
 import axios, { AxiosRequestConfig } from 'axios';
+import StatusCodes from 'http-status-codes';
 import yaml from 'yaml';
-
 
 interface PrTemplate {
     title: string;
     description?: string;
     preset?: {
+        assignees?: string[];
         reviewers?: string[];
         'team-reviewers'?: string[];
         labels?: string[];
@@ -46,8 +47,20 @@ async function loadPrTemplate(owner: string, repo: string, branch: string, fileP
     return yaml.parse(response.data) as PrTemplate;
 }
 
+function initOctokit() {
+    // usage example from: https://github.com/actions/toolkit/tree/main/packages/github
+    // This should be a token with access to your repository scoped in as a secret.
+    // The YML workflow will need to set myToken with the GitHub Secret Token
+    // myToken: ${{ secrets.GITHUB_TOKEN }}
+    // https://help.github.com/en/actions/automating-your-workflow-with-github-actions/authenticating-with-the-github_token#about-the-github_token-secret
+    const token = core.getInput('github-token');
+    const octokit = github.getOctokit(token);
+    return octokit;
+}
+
 async function main(): Promise<void> {
     try {
+        const octokit = initOctokit();
         const [owner, repo] = github.context.payload.repository.full_name.split('/');
         const [, refType, refName] = /(?<=refs\/)([^\/]*)\/(\S*)/gm.exec(String(github.context.payload.ref)) || [];
         const isBranch = refType === 'heads';
@@ -57,16 +70,21 @@ async function main(): Promise<void> {
         const headBranch = isBranch && refName;
         const isPrerelease = core.getInput('is-prerelease') || '';
         const prCreateDraft = core.getInput('pr-create-draft') || '';
-        const prUpdateIfExist = core.getInput('pr-update-if-exist') || '';
+        const prFailIfExist = core.getInput('pr-fail-if-exist') || '';
         const prTemplateUri = core.getInput('pr-template-uri') || '';
+
         let prTitle: string = core.getInput('pr-title') || '';
         let prDescription: string = core.getInput('pr-description') || '';
+
+        const inputPrAssignees = core.getInput('pr-assignees') || '';
         const inputPrReviewers = core.getInput('pr-reviewers') || '';
         const inputPrTeamReviewers = core.getInput('pr-team-reviewers') || '';
         const inputPrLabels = core.getInput('pr-labels') || '';
+        let prAssignees = inputPrAssignees.split(',') || [];
         let prReviewers = inputPrReviewers.split(',') || [];
         let prTeamReviewers = inputPrTeamReviewers.split(',') || [];
         let prLabels = inputPrLabels.split(',') || [];
+
         // fetch the old version
         console.log(`Fetching package.json from: ${owner}/${repo}/${baseBranch}`);
         const basePackageJson: { [key: string]: unknown } = await fetchPackageJson(owner, repo, baseBranch);
@@ -101,9 +119,11 @@ async function main(): Promise<void> {
         // replace place holders in template
         const replace = (str: string): string => {
             return str
-                .replace(new RegExp('${base-version}', 'g'), baseVersion)
-                .replace(new RegExp('${head-version}', 'g'), headVersion)
-                .replace(new RegExp('${is-prerelease}', 'g'), isPrerelease);
+                .replace(new RegExp('\\${base-branch}', 'g'), baseBranch)
+                .replace(new RegExp('\\${base-version}', 'g'), baseVersion)
+                .replace(new RegExp('\\${head-branch}', 'g'), headBranch)
+                .replace(new RegExp('\\${head-version}', 'g'), headVersion)
+                .replace(new RegExp('\\${is-prerelease}', 'g'), isPrerelease);
         };
         prTitle = replace(prTitle);
         prDescription = replace(prDescription);
@@ -114,8 +134,101 @@ async function main(): Promise<void> {
         core.setOutput('head-version', baseVersion);
         core.setOutput('is-prerelease', isPrerelease);
         core.setOutput('pr-create-draft', prCreateDraft);
-        core.setOutput('pr-update-if-exist', prUpdateIfExist);
-        core.setOutput('pull-request-url', 'not-yet-set');
+
+        // additional checking if need to check fail-if-exist
+        console.log('Action [pr-fail-if-exist] is set: ' +
+            `${prFailIfExist === 'true' && 'true' || 'false'}`);
+        if (prFailIfExist) {
+            // get the pr with the same head and base
+            const prListResponse = await octokit.pulls.list({
+                owner: owner,
+                repo: repo,
+                head: headBranch,
+                base: baseBranch
+            });
+            // pr found
+            if (prListResponse.data.length) {
+                // pr is closed
+                if (prListResponse.data[0].state === 'closed') {
+                    throw new Error(`The pull request to base branch: ${baseBranch}` +
+                        ` from head branch: ${headBranch} has been closed.`);
+                } else {
+                    throw new Error(
+                        `Not allowed to re-issue a pull request to base branch: ${baseBranch}` +
+                        ` from head branch: ${headBranch}.`);
+                }
+            }
+        }
+        // create a pr with the above title and description.
+        const prCreateResponse = await octokit.pulls.create({
+            owner: owner,
+            repo: repo,
+            head: headBranch,
+            base: baseBranch,
+            title: prTitle || undefined,
+            body: prDescription || undefined,
+            draft: prCreateDraft === 'true'
+        });
+        core.setOutput('pull-request-number', prCreateResponse.data.number);
+        core.setOutput('pull-request-url', prCreateResponse.url);
+        // add assignee if needed
+        const assignees: string[] = [];
+        if (prAssignees.length) {
+            // check if a user can be assigned, filter non-assignable users
+            // see: https://octokit.github.io/rest.js/v18#issues-check-user-can-be-assigned
+            await Promise.allSettled(
+                prAssignees.map(async (assignee) => {
+                    let neg = 'not ';
+                    const res = await octokit.issues.checkUserCanBeAssigned({
+                        owner: owner,
+                        repo: repo,
+                        assignee: assignee
+                    });
+                    if (res.headers.status === String(StatusCodes.NO_CONTENT)) {
+                        assignees.push(assignee);
+                        neg = '';
+                    }
+                    console.log(`assignee: ${assignee} is ${neg}assignable.`);
+                }
+                ));
+            if (assignees.length) {
+                await octokit.issues.addAssignees({
+                    owner: owner,
+                    repo: repo,
+                    issue_number: prCreateResponse.data.number,
+                    assignees: prAssignees
+                });
+            }
+        }
+        // output the actual assignees.
+        core.setOutput('assignees', assignees.length && assignees.join(',') || '');
+
+        // add reviewers if needed
+        if (prReviewers.length || prTeamReviewers.length) {
+            await octokit.pulls.requestReviewers({
+                owner: owner,
+                repo: repo,
+                pull_number: prCreateResponse.data.number,
+                reviewers: prReviewers,
+                team_reviewers: prTeamReviewers
+            });
+        }
+        // output the actual reviewers and / or team reviewers.
+        core.setOutput('reviewers', prReviewers.length && prReviewers.join(',') || '');
+        core.setOutput('team-reviewers', prTeamReviewers.length && prTeamReviewers.join(',') || '');
+
+        // add labels if needed
+        if (prLabels.length) {
+            await octokit.issues.addLabels({
+                owner: owner,
+                repo: repo,
+                issue_number: prCreateResponse.data.number,
+                labels: prLabels
+            });
+        }
+        // output the actual lables.
+        core.setOutput('labels', prLabels.length && prLabels.join(',') || '');
+
         // Get the JSON webhook payload for the event that triggered the workflow
         const payload = JSON.stringify(github.context.payload, null, 4);
         console.log('payload:', payload);

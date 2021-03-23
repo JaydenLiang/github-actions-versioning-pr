@@ -27,6 +27,7 @@
     "@actions/github": "^4.0.0",
     "@types/node": "^14.14.35",
     "axios": "^0.21.1",
+    "http-status-codes": "^2.1.4",
     "yaml": "^1.10.2"
   },
   "devDependencies": {
