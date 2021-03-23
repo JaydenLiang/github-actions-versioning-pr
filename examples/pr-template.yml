@@ -1,14 +1,15 @@
 title: Bumping version to ${head-version}
 description: >-
-  This pull request is automatically issued to bump version of ${base-branch} to ${head-version} for a new release.
+  This pull request is automatically issued to bump version of branch: ${base-branch} to ${head-version} for a new release.
+
 
   The following information about this pull request can be used in a chained CD pipeline.
 
-  *base-version: ${base-version}
+  * base-version: ${base-version}
 
-  *head-version: ${head-version}
+  * head-version: ${head-version}
 
-  *is-prerelease: ${is-prerelease}
+  * is-prerelease: ${is-prerelease}
 
 preset:
   assignees:

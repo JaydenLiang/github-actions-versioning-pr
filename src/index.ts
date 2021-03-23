@@ -66,7 +66,7 @@ async function main(): Promise<void> {
         const isBranch = refType === 'heads';
         const baseBranch = core.getInput('base-branch') || '';
         const headBranch = isBranch && refName;
-        const isPrerelease = core.getInput('is-prerelease') || '';
+        const isPrerelease = core.getInput('prerelease') || '';
         const prCreateDraft = core.getInput('pr-create-draft') || '';
         const prFailIfExist = core.getInput('pr-fail-if-exist') || '';
         const prTemplateUri = core.getInput('pr-template-uri') || '';
