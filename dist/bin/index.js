@@ -17643,7 +17643,7 @@ async function main() {
         // additional checking if need to check fail-if-exist
         console.log('Action [pr-fail-if-exist] is set: ' +
             `${prFailIfExist === 'true' && 'true' || 'false'}`);
-        if (prFailIfExist) {
+        if (prFailIfExist === 'true') {
             // get the pr with the same head and base
             const prListResponse = await octokit.pulls.list({
                 owner: owner,
