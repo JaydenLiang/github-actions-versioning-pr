@@ -17689,6 +17689,12 @@ async function main() {
             * is-prerelease: ${isPrerelease}
             `;
         // get comments and filter by author
+        const prListCommentResponse = await octokit.issues.listComments({
+            owner: owner,
+            repo: repo,
+            issue_number: pullRequest.number
+        });
+        console.log(`comments: `, JSON.stringify(prListCommentResponse.data, null, 4));
         // add a comment
         await octokit.issues.createComment({
             owner: owner,
