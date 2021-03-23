@@ -17616,6 +17616,7 @@ async function main() {
                 prLabels = templateYaml.preset.labels;
             }
         }
+        console.log('prAssignees:', prAssignees);
         console.log('prReviewers:', prReviewers);
         console.log('prTeamReviewers:', prTeamReviewers);
         console.log('prLabels:', prLabels);
@@ -17696,11 +17697,13 @@ async function main() {
             // see: https://octokit.github.io/rest.js/v18#issues-check-user-can-be-assigned
             await Promise.allSettled(prAssignees.map(async (assignee) => {
                 let neg = 'not ';
+                console.log(`Checking before adding assignee: ${assignees}...`);
                 const res = await octokit.issues.checkUserCanBeAssigned({
                     owner: owner,
                     repo: repo,
                     assignee: assignee
                 });
+                console.log('assignee checking result:', JSON.stringify(res, null, 4));
                 if (res.headers.status === String(http_status_codes_1.default.NO_CONTENT)) {
                     assignees.push(assignee);
                     neg = '';
