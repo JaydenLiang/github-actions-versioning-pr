@@ -5,8 +5,11 @@ description: >-
   The following information about this pull request can be used in a chained CD pipeline.
 
   *base-version: ${base-version}
+
   *head-version: ${head-version}
+
   *is-prerelease: ${is-prerelease}
+
 preset:
   assignees:
     - assignee1

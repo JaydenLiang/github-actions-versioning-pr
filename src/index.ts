@@ -64,8 +64,6 @@ async function main(): Promise<void> {
         const [owner, repo] = github.context.payload.repository.full_name.split('/');
         const [, refType, refName] = /(?<=refs\/)([^\/]*)\/(\S*)/gm.exec(String(github.context.payload.ref)) || [];
         const isBranch = refType === 'heads';
-        // const isTag = refType === 'tags';
-        const mainBranch = github.context.payload.repository.default_branch || 'main';
         const baseBranch = core.getInput('base-branch') || '';
         const headBranch = isBranch && refName;
         const isPrerelease = core.getInput('is-prerelease') || '';
@@ -96,10 +94,9 @@ async function main(): Promise<void> {
         // fetch pr-template yaml if specified
         if (prTemplateUri) {
             console.log('prTemplateUri:', prTemplateUri);
-            console.log('cwd', process.cwd());
             // NOTE: the template must reside in your GitHub repository, either in
             // the default branch or the head branch
-            const templateYaml = await loadPrTemplate(owner, repo, mainBranch, prTemplateUri);
+            const templateYaml = await loadPrTemplate(owner, repo, headBranch, prTemplateUri);
             prTitle = prTitle || (templateYaml.title);
             prDescription = prDescription || templateYaml.description;
             if (prReviewers.length === 0 && templateYaml.preset && templateYaml.preset.reviewers) {
