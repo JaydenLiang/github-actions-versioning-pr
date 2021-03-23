@@ -17608,14 +17608,14 @@ async function main() {
             const templateYaml = await loadPrTemplate(owner, repo, mainBranch, prTemplateUri);
             prTitle = prTitle || (templateYaml.title);
             prDescription = prDescription || templateYaml.description;
-            // NOTE: optional chaining works in NodeJS 12 and higher version only
-            if (prReviewers.length === 0 && templateYaml.preset?.reviewers) {
+            if (prReviewers.length === 0 && templateYaml.preset && templateYaml.preset.reviewers) {
                 prReviewers = templateYaml.preset.reviewers;
             }
-            if (prTeamReviewers.length === 0 && templateYaml.preset?.['team-reviewers']) {
+            if (prTeamReviewers.length === 0 && templateYaml.preset
+                && templateYaml.preset['team-reviewers']) {
                 prTeamReviewers = templateYaml.preset['team-reviewers'];
             }
-            if (prLabels.length === 0 && templateYaml.preset?.labels) {
+            if (prLabels.length === 0 && templateYaml.preset && templateYaml.preset.labels) {
                 prLabels = templateYaml.preset.labels;
             }
         }
