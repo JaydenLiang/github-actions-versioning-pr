@@ -17643,27 +17643,20 @@ async function main() {
             owner: owner,
             repo: repo,
             head: headBranch,
-            base: baseBranch
+            base: baseBranch,
+            sort: 'updated',
+            direction: 'desc', // will sort with latest ones on top
         });
+        // ASSERT: the 1st pr is the latest updated one (either open or closed)
         let pullRequest = prListResponse.data.length && prListResponse.data[0];
         // additional checking if need to check fail-if-exist
         console.log('Action [pr-fail-if-exist] is set: ' +
             `${prFailIfExist === 'true' && 'true' || 'false'}`);
-        if (prFailIfExist === 'true') {
-            // pr found
-            if (pullRequest) {
-                // pr is closed
-                if (pullRequest.state === 'closed') {
-                    throw new Error(`The pull request to base branch: ${baseBranch}` +
-                        ` from head branch: ${headBranch} has been closed.`);
-                }
-                else {
-                    throw new Error(`Not allowed to re-issue a pull request to base branch: ${baseBranch}` +
-                        ` from head branch: ${headBranch}.`);
-                }
-            }
+        if (prFailIfExist === 'true' && pullRequest && pullRequest.state === 'open') {
+            throw new Error(`Not allowed to re-issue a pull request to base branch: ${baseBranch}` +
+                ` from head branch: ${headBranch}. An open pull request is found.`);
         }
-        // if an existing pr is found, update it. otherwise, create one
+        // if an open pr is found, update it. otherwise, create one
         if (pullRequest) {
             const prUpdateResponse = await octokit.pulls.update({
                 owner: owner,
@@ -17690,6 +17683,19 @@ async function main() {
         }
         core.setOutput('pull-request-number', pullRequest.number);
         core.setOutput('pull-request-url', pullRequest.url);
+        // add or update a review comment to store useful transitional informations.
+        let comment = `Transitional information. Please do not modify or delete.
+
+            * is-prerelease: ${isPrerelease}
+            `;
+        // get comments and filter by author
+        // add a comment
+        await octokit.issues.createComment({
+            owner: owner,
+            repo: repo,
+            issue_number: pullRequest.number,
+            body: comment
+        });
         // add assignee if needed
         const assignees = [];
         if (prAssignees.length) {
