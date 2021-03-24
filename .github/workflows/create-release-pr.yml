@@ -42,6 +42,14 @@ on:
           GitHub action.
         required: false
         default: templates/pr-template.yml
+      author-name:
+        description: >-
+          The author' user name used for creating the versioning commit.
+        required: true
+      author-email:
+        description: >-
+          The author' email address used for creating the versioning commit.
+        required: true
 jobs:
   main_job:
     runs-on: ubuntu-latest
@@ -63,6 +71,10 @@ jobs:
         with:
           # set ref to the head branch (newly created) from the output of step: create-branch
           ref: ${{ steps['create-branch'].outputs['head-branch'] }}
+      - name: config git author identity
+        run: |
+          git config user.name "${{ github.event.inputs.author-name }}"
+          git config user.email "${{ github.event.inputs.author-email }}"
       # install all dependencies
       - name: install project dependencies
         run: npm ci
