@@ -1,6 +1,6 @@
 # Will be triggered either by 'pushing any tag' or 'manual trigger' with additional inputs
 name: >-
-  Draft a release pull request
+  Draft a release pull request from head branch to base branch
 
 on:
   # Run by manual trigger
