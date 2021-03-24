@@ -17609,6 +17609,7 @@ async function main() {
         }
         console.log('prTemplateUri:', prTemplateUri);
         const templateYaml = await loadTemplate(owner, repo, defaultBranch, prTemplateUri);
+        console.log('template content: ', JSON.stringify(templateYaml, null, 4));
         const prTemplateNode = templateYaml['pull-request'];
         prTitle = prTitle || (prTemplateNode.title);
         prDescription = prDescription || prTemplateNode.description;

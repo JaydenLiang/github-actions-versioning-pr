@@ -108,6 +108,7 @@ async function main(): Promise<void> {
         }
         console.log('prTemplateUri:', prTemplateUri);
         const templateYaml = await loadTemplate<PrTemplate>(owner, repo, defaultBranch, prTemplateUri);
+        console.log('template content: ', JSON.stringify(templateYaml, null, 4));
         const prTemplateNode = templateYaml['pull-request'];
         prTitle = prTitle || (prTemplateNode.title);
         prDescription = prDescription || prTemplateNode.description;
