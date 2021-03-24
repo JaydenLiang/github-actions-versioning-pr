@@ -11,6 +11,11 @@ on:
           The base branch that the pull request is issued against.
         required: true
         default: main
+      head-branch:
+        description: >-
+          The head branch that the pull request is issued against.
+        required: true
+        default: main
       pr-assignees:
         description: >-
           A comma-separated list of the assignees (usernames) for the pull request.
@@ -53,6 +58,7 @@ jobs:
         uses: JaydenLiang/github-actions-versioning-pr@main
         with:
           base-branch: ${{ github.event.inputs.base-branch }}
+          head-branch: ${{ github.event.inputs.head-branch }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
           prerelease: ${{ github.event.inputs.prerelease }}
           pr-assignees: ${{ github.event.inputs.pr-assignees }}
@@ -61,7 +67,7 @@ jobs:
           pr-labels: ${{ github.event.inputs.pr-labels }}
           pr-reviewers: ${{ github.event.inputs.pr-reviewers }}
           pr-team-reviewers: ${{ github.event.inputs.pr-team-reviewers }}
-          pr-template-uri: templates/pr-template.yml
+          pr-template-uri: templates/versioning-pr.yml
       # Use the output from the `versioning-pr` step
       - name: Get the versioning-pr output
         run: |
