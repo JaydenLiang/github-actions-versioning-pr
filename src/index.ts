@@ -197,7 +197,7 @@ async function main(): Promise<void> {
         const infoCommentTemplate = templateYaml['info-comment'];
         const infoCommentBody = infoCommentTemplate
             && infoCommentTemplate.body
-            && replace(infoCommentTemplate.body);
+            && replace(infoCommentTemplate.body) || '';
         // get comments and filter by github bot author:
         // login: github-actions[bot]
         // id: 41898282
