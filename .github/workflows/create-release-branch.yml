@@ -16,7 +16,7 @@ on:
           The name prefix to include in the new branch name.
           The new branch name format is: <prefix><version>. Example: Rel_branchv1.0.0-rc.1
         required: true
-        default: main
+        default: rel_
       version-level:
         description: >-
           The level of the semver version.
