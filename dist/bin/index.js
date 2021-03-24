@@ -17586,10 +17586,10 @@ async function main() {
         const inputPrReviewers = core.getInput('pr-reviewers') || '';
         const inputPrTeamReviewers = core.getInput('pr-team-reviewers') || '';
         const inputPrLabels = core.getInput('pr-labels') || '';
-        let prAssignees = inputPrAssignees.split(',') || [];
-        let prReviewers = inputPrReviewers.split(',') || [];
-        let prTeamReviewers = inputPrTeamReviewers.split(',') || [];
-        let prLabels = inputPrLabels.split(',') || [];
+        let prAssignees = inputPrAssignees.split(',').filter(n => !!n) || [];
+        let prReviewers = inputPrReviewers.split(',').filter(n => !!n) || [];
+        let prTeamReviewers = inputPrTeamReviewers.split(',').filter(n => !!n) || [];
+        let prLabels = inputPrLabels.split(',').filter(n => !!n) || [];
         // fetch the old version
         console.log(`Fetching package.json from: ${owner}/${repo}/${baseBranch}`);
         const basePackageJson = await fetchPackageJson(owner, repo, baseBranch);
