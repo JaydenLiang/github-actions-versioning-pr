@@ -17613,6 +17613,9 @@ async function main() {
         const prTemplateNode = templateYaml['pull-request'];
         prTitle = prTitle || (prTemplateNode.title);
         prDescription = prDescription || prTemplateNode.description;
+        if (prAssignees.length === 0 && prTemplateNode.assignees) {
+            prAssignees = prTemplateNode.assignees;
+        }
         if (prReviewers.length === 0 && prTemplateNode.reviewers) {
             prReviewers = prTemplateNode.reviewers;
         }
