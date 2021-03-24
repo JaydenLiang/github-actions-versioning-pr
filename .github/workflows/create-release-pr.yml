@@ -1,6 +1,6 @@
 # Will be triggered either by 'pushing any tag' or 'manual trigger' with additional inputs
 name: >-
-  Create a versioning branch
+  Create a versioning release branch with a pull request to a base branch.
 
 on:
   # Run by manual trigger
@@ -36,12 +36,18 @@ on:
           If specified, it will be used instead of the other versioning parameters.
           It must be a valid semver format.
         required: false
+      pr-template-uri:
+        description: >-
+          The uri of the pull request template to be used. It is a relative path to where you use this
+          GitHub action.
+        required: false
+        default: templates/pr-template.yml
 jobs:
   main_job:
     runs-on: ubuntu-latest
     name: main job
     steps:
-      - name: create branch
+      - name: create versioning branch
         id: create-branch
         uses: JaydenLiang/github-actions-versioning-branch@main
         with:
@@ -51,11 +57,32 @@ jobs:
           version-level: ${{ github.event.inputs.version-level }}
           pre-id: ${{ github.event.inputs.pre-id }}
           custom-version: ${{ github.event.inputs.custom-version }}
-      # Use the output from the `create-branch` step
-      - name: Get the create-branch output
-        run: |
-          echo "The base-branch was ${{ steps['create-branch'].outputs['base-branch'] }}"
-          echo "The base-version was ${{ steps['create-branch'].outputs['base-version'] }}"
-          echo "The head-branch was ${{ steps['create-branch'].outputs['head-branch'] }}"
-          echo "The head-version was ${{ steps['create-branch'].outputs['head-version'] }}"
-          echo "The is-prerelease was ${{ steps['create-branch'].outputs['is-prerelease'] }}"
+      # checkout the versioning branch
+      - name: checkout version branch
+        uses: actions/checkout@v2
+        with:
+          # set ref to the head branch (newly created) from the output of step: create-branch
+          ref: ${{ steps['create-branch'].outputs['head-branch'] }}
+      # install all dependencies
+      - name: install project dependencies
+        run: npm ci
+      # bump version by running `npm version`
+      # pre-version, in-version, post-version scripts will not take into account here.
+      - name: bump version
+        id: bump-version
+        # use the same version from the output of step: create-branch
+        run: npm version ${{ steps['create-branch'].outputs['head-version'] }}
+      - name: submit changes
+        # push commits only. Even though a tag is created, it will not be pushed.
+        run: git push
+      # open a versioning pull request for review
+      - name: versioning pr
+        id: versioning-pr
+        uses: JaydenLiang/github-actions-versioning-pr@main
+        with:
+          base-branch: ${{ github.event.inputs.base-branch }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          prerelease: ${{ steps['create-branch'].outputs['is-prerelease'] }}
+          pr-create-draft: true
+          pr-fail-if-exist: false
+          pr-template-uri: templates/poc/pr-template.yml

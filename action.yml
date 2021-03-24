@@ -59,10 +59,9 @@ inputs:
     required: false
   pr-template-uri:
     description: >-
-      The FQDN of the uri of the pull request template to be used. Template format can be
-      found in: examples.
+      The uri of the pull request template to be used. It is a relative path to where you use this
+      GitHub action.
     required: false
-    default: examples/pr-template.yml
   pr-title:
     description: >-
       The title for the pull request. If pr-template-uri is also used, this parameter will override.
