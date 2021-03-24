@@ -46,6 +46,7 @@ jobs:
         uses: JaydenLiang/github-actions-versioning-branch@main
         with:
           base-branch: ${{ github.event.inputs.base-branch }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
           name-prefix: ${{ github.event.inputs.name-prefix }}
           version-level: ${{ github.event.inputs.version-level }}
           pre-id: ${{ github.event.inputs.pre-id }}
