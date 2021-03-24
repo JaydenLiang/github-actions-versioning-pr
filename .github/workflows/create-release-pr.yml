@@ -41,7 +41,7 @@ on:
           The uri of the pull request template to be used. It is a relative path to where you use this
           GitHub action.
         required: false
-        default: templates/pr-template.yml
+        default: templates/poc/versioning-pr.yml
       author-name:
         description: >-
           The author' user name used for creating the versioning commit.
@@ -93,9 +93,9 @@ jobs:
         uses: JaydenLiang/github-actions-versioning-pr@main
         with:
           base-branch: ${{ github.event.inputs.base-branch }}
-          base-branch: ${{ github.event.inputs.base-branch }}
+          head-branch: ${{ steps['create-branch'].outputs['head-branch'] }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
           prerelease: ${{ steps['create-branch'].outputs['is-prerelease'] }}
+          pr-template-uri: ${{ github.event.inputs.pr-template-uri }}
           pr-create-draft: true
           pr-fail-if-exist: false
-          pr-template-uri: templates/poc/pr-template.yml
