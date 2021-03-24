@@ -17543,7 +17543,7 @@ async function fetchPackageJson(owner, repo, branch) {
     const response = await axios_1.default(options);
     return response.data;
 }
-async function loadPrTemplate(owner, repo, branch, filePath) {
+async function loadTemplate(owner, repo, branch, filePath) {
     const url = `https://raw.githubusercontent.com/` +
         `${owner}/${repo}/${branch}/${filePath}`;
     const options = {
@@ -17602,7 +17602,7 @@ async function main() {
             console.log('prTemplateUri:', prTemplateUri);
             // NOTE: the template must reside in your GitHub repository, either in
             // the default branch or the head branch
-            const templateYaml = await loadPrTemplate(owner, repo, headBranch, prTemplateUri);
+            const templateYaml = await loadTemplate(owner, repo, headBranch, prTemplateUri);
             prTitle = prTitle || (templateYaml.title);
             prDescription = prDescription || templateYaml.description;
             if (prReviewers.length === 0 && templateYaml.preset && templateYaml.preset.reviewers) {
@@ -17631,39 +17631,31 @@ async function main() {
         };
         prTitle = replace(prTitle);
         prDescription = replace(prDescription);
-        console.log('pr title:', prTitle, 'pr descriptioin:', prDescription);
         core.setOutput('base-branch', baseBranch);
         core.setOutput('base-version', baseVersion);
         core.setOutput('head-branch', baseBranch);
         core.setOutput('head-version', baseVersion);
         core.setOutput('is-prerelease', isPrerelease);
-        core.setOutput('pr-create-draft', prCreateDraft);
+        core.setOutput('is-draft-pr', prCreateDraft);
         // get the pr with the same head and base
         const prListResponse = await octokit.pulls.list({
             owner: owner,
             repo: repo,
             head: headBranch,
-            base: baseBranch
+            base: baseBranch,
+            sort: 'updated',
+            direction: 'desc', // will sort with latest ones on top
         });
+        // ASSERT: the 1st pr is the latest updated one (either open or closed)
         let pullRequest = prListResponse.data.length && prListResponse.data[0];
         // additional checking if need to check fail-if-exist
         console.log('Action [pr-fail-if-exist] is set: ' +
             `${prFailIfExist === 'true' && 'true' || 'false'}`);
-        if (prFailIfExist === 'true') {
-            // pr found
-            if (pullRequest) {
-                // pr is closed
-                if (pullRequest.state === 'closed') {
-                    throw new Error(`The pull request to base branch: ${baseBranch}` +
-                        ` from head branch: ${headBranch} has been closed.`);
-                }
-                else {
-                    throw new Error(`Not allowed to re-issue a pull request to base branch: ${baseBranch}` +
-                        ` from head branch: ${headBranch}.`);
-                }
-            }
+        if (prFailIfExist === 'true' && pullRequest && pullRequest.state === 'open') {
+            throw new Error(`Not allowed to re-issue a pull request to base branch: ${baseBranch}` +
+                ` from head branch: ${headBranch}. An open pull request is found.`);
         }
-        // if an existing pr is found, update it. otherwise, create one
+        // if an open pr is found, update it. otherwise, create one
         if (pullRequest) {
             const prUpdateResponse = await octokit.pulls.update({
                 owner: owner,
@@ -17690,6 +17682,38 @@ async function main() {
         }
         core.setOutput('pull-request-number', pullRequest.number);
         core.setOutput('pull-request-url', pullRequest.url);
+        // add or update a review comment to store useful transitional informations.
+        const infoCommentTemplate = await loadTemplate(owner, repo, headBranch, 'templates/pr-info-comment.yml');
+        const infoCommentBody = replace(infoCommentTemplate.body);
+        // get comments and filter by github bot author:
+        // login: github-actions[bot]
+        // id: 41898282
+        const prListCommentResponse = await octokit.issues.listComments({
+            owner: owner,
+            repo: repo,
+            issue_number: pullRequest.number
+        });
+        const [infoComment] = prListCommentResponse.data.filter(comment => {
+            return comment.user.login === 'github-actions[bot]' || comment.user.id === 41898282;
+        });
+        // info comment is found, update it.
+        if (infoComment) {
+            await octokit.issues.updateComment({
+                owner: owner,
+                repo: repo,
+                comment_id: infoComment.id,
+                body: infoCommentBody
+            });
+        }
+        // otherwise, add a comment
+        else {
+            await octokit.issues.createComment({
+                owner: owner,
+                repo: repo,
+                issue_number: pullRequest.number,
+                body: infoCommentBody
+            });
+        }
         // add assignee if needed
         const assignees = [];
         if (prAssignees.length) {
@@ -17703,7 +17727,6 @@ async function main() {
                     repo: repo,
                     assignee: assignee
                 });
-                console.log('assignee checking result:', JSON.stringify(res, null, 4));
                 if (res.status === http_status_codes_1.default.NO_CONTENT) {
                     assignees.push(assignee);
                     neg = '';
@@ -17770,7 +17793,7 @@ module.exports = eval("require")("encoding");
 /***/ ((module) => {
 
 "use strict";
-module.exports = JSON.parse("{\"name\":\"github-actions-versioning-pr\",\"version\":\"1.0.1-dev.27\",\"description\":\"\",\"main\":\"dist/bin/index.js\",\"types\":\"dist/types\",\"scripts\":{\"bundle\":\"shx rm -rf dist/bin && ncc build out/index.js -so dist/bin\",\"compile\":\"shx rm -rf out && shx rm -rf dist/types && tsc\",\"make-dist\":\"npm run compile && npm run bundle\",\"test\":\"echo \\\"No test specified.\\\" && exit 0\",\"version\":\"npm run make-dist && git add .\"},\"repository\":{\"type\":\"git\",\"url\":\"git+https://github.com/JaydenLiang/github-actions-versioning-pr.git\"},\"keywords\":[],\"author\":\"\",\"license\":\"MIT\",\"bugs\":{\"url\":\"https://github.com/JaydenLiang/github-actions-versioning-pr/issues\"},\"homepage\":\"https://github.com/JaydenLiang/github-actions-versioning-pr#readme\",\"dependencies\":{\"@actions/core\":\"^1.2.6\",\"@actions/github\":\"^4.0.0\",\"@types/node\":\"^14.14.35\",\"axios\":\"^0.21.1\",\"http-status-codes\":\"^2.1.4\",\"yaml\":\"^1.10.2\"},\"devDependencies\":{\"@types/yaml\":\"^1.9.7\",\"@vercel/ncc\":\"^0.27.0\",\"eslint\":\"^7.22.0\",\"eslint-config-prettier\":\"^8.1.0\",\"eslint-plugin-prettier\":\"^3.3.1\",\"prettier\":\"^2.2.1\",\"shx\":\"^0.3.3\",\"typescript\":\"^4.2.3\"}}");
+module.exports = JSON.parse("{\"name\":\"github-actions-versioning-pr\",\"version\":\"1.0.1-dev.32\",\"description\":\"\",\"main\":\"dist/bin/index.js\",\"types\":\"dist/types\",\"scripts\":{\"bundle\":\"shx rm -rf dist/bin && ncc build out/index.js -so dist/bin\",\"compile\":\"shx rm -rf out && shx rm -rf dist/types && tsc\",\"make-dist\":\"npm run compile && npm run bundle\",\"test\":\"echo \\\"No test specified.\\\" && exit 0\",\"version\":\"npm run make-dist && git add .\"},\"repository\":{\"type\":\"git\",\"url\":\"git+https://github.com/JaydenLiang/github-actions-versioning-pr.git\"},\"keywords\":[],\"author\":\"\",\"license\":\"MIT\",\"bugs\":{\"url\":\"https://github.com/JaydenLiang/github-actions-versioning-pr/issues\"},\"homepage\":\"https://github.com/JaydenLiang/github-actions-versioning-pr#readme\",\"dependencies\":{\"@actions/core\":\"^1.2.6\",\"@actions/github\":\"^4.0.0\",\"@types/node\":\"^14.14.35\",\"axios\":\"^0.21.1\",\"http-status-codes\":\"^2.1.4\",\"yaml\":\"^1.10.2\"},\"devDependencies\":{\"@types/yaml\":\"^1.9.7\",\"@vercel/ncc\":\"^0.27.0\",\"eslint\":\"^7.22.0\",\"eslint-config-prettier\":\"^8.1.0\",\"eslint-plugin-prettier\":\"^3.3.1\",\"prettier\":\"^2.2.1\",\"shx\":\"^0.3.3\",\"typescript\":\"^4.2.3\"}}");
 
 /***/ }),
 

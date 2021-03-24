@@ -1,0 +1,19 @@
+# available template place holders:
+# ${base-branch}
+# ${base-version}
+# ${head-branch}
+# ${head-version}
+# ${is-prerelease}
+# ${is-draft-pr}
+body: >-
+  Useful transitional information about this pull request. Please do not modify or delete.
+
+  * base-version: ${base-version}
+
+  * base-branch: ${base-branch}
+
+  * head-version: ${head-version}
+
+  * head-branch: ${head-branch}
+
+  * is-prerelease: ${is-prerelease}
