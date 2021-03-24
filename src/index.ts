@@ -2,22 +2,24 @@ import * as core from '@actions/core';
 import * as github from '@actions/github';
 import axios, { AxiosRequestConfig } from 'axios';
 import StatusCodes from 'http-status-codes';
+import path from 'path';
 import yaml from 'yaml';
 
 interface PrTemplate {
-    title: string;
-    description?: string;
-    preset?: {
+    "pull-request": {
+        title: string;
+        description?: string;
         assignees?: string[];
         reviewers?: string[];
         'team-reviewers'?: string[];
         labels?: string[];
+    };
+    "info-comment"?: {
+        body: string;
     }
+    [key: string]: unknown;
 }
 
-interface infoCommentTemplate {
-    body: string;
-}
 
 async function fetchPackageJson(owner: string, repo: string, branch: string): Promise<{ [key: string]: unknown }> {
     const basePackageJsonUrl = `https://raw.githubusercontent.com/` +
@@ -36,8 +38,9 @@ async function fetchPackageJson(owner: string, repo: string, branch: string): Pr
 }
 
 async function loadTemplate<T>(owner: string, repo: string, branch: string, filePath: string): Promise<T> {
+    let normalizedPath = path.normalize(filePath);
     const url = `https://raw.githubusercontent.com/` +
-        `${owner}/${repo}/${branch}/${filePath}`;
+        `${owner}/${repo}/${branch}${normalizedPath.startsWith('/') ? '' : '/'}${filePath}`;
 
     const options: AxiosRequestConfig = {
         method: 'GET',
@@ -66,14 +69,13 @@ async function main(): Promise<void> {
     try {
         const octokit = initOctokit();
         const [owner, repo] = github.context.payload.repository.full_name.split('/');
-        const [, refType, refName] = /(?<=refs\/)([^\/]*)\/(\S*)/gm.exec(String(github.context.payload.ref)) || [];
-        const isBranch = refType === 'heads';
         const baseBranch = core.getInput('base-branch') || '';
-        const headBranch = isBranch && refName;
+        const headBranch = core.getInput('head-branch') || '';
+        const defaultBranch = String(github.context.payload.repository.default_branch) || 'main';
         const isPrerelease = core.getInput('prerelease') || '';
         const prCreateDraft = core.getInput('pr-create-draft') || '';
         const prFailIfExist = core.getInput('pr-fail-if-exist') || '';
-        const prTemplateUri = core.getInput('pr-template-uri') || '';
+        let prTemplateUri = core.getInput('pr-template-uri') || '';
 
         let prTitle: string = core.getInput('pr-title') || '';
         let prDescription: string = core.getInput('pr-description') || '';
@@ -95,24 +97,29 @@ async function main(): Promise<void> {
         console.log(`Fetching package.json from: ${owner}/${repo}/${headBranch}`);
         const headPackageJson: { [key: string]: unknown } = await fetchPackageJson(owner, repo, headBranch);
         const headVersion = headPackageJson.version as string;
-        // fetch pr-template yaml if specified
-        if (prTemplateUri) {
-            console.log('prTemplateUri:', prTemplateUri);
-            // NOTE: the template must reside in your GitHub repository, either in
-            // the default branch or the head branch
-            const templateYaml = await loadTemplate<PrTemplate>(owner, repo, headBranch, prTemplateUri);
-            prTitle = prTitle || (templateYaml.title);
-            prDescription = prDescription || templateYaml.description;
-            if (prReviewers.length === 0 && templateYaml.preset && templateYaml.preset.reviewers) {
-                prReviewers = templateYaml.preset.reviewers;
-            }
-            if (prTeamReviewers.length === 0 && templateYaml.preset
-                && templateYaml.preset['team-reviewers']) {
-                prTeamReviewers = templateYaml.preset['team-reviewers'];
-            }
-            if (prLabels.length === 0 && templateYaml.preset && templateYaml.preset.labels) {
-                prLabels = templateYaml.preset.labels;
-            }
+        // fetch pr-template yaml
+        // NOTE: if a custom location is specified, use the custom location
+        // otherwise, use the common template located in .github/workflows/templates/versioning-pr.yml
+        // of the default branch of the repo where the action is hosted.
+        // CAUTION: even though using the custom location, the location is still retricted to
+        // a relative path to the default branch of the repo where the action is hosted.
+        if (!prTemplateUri) {
+            prTemplateUri = '.github/workflows/templates/versioning-pr.yml';
+        }
+        console.log('prTemplateUri:', prTemplateUri);
+        const templateYaml = await loadTemplate<PrTemplate>(owner, repo, defaultBranch, prTemplateUri);
+        const prTemplateNode = templateYaml['pull-request'];
+        prTitle = prTitle || (prTemplateNode.title);
+        prDescription = prDescription || prTemplateNode.description;
+        if (prReviewers.length === 0 && prTemplateNode.reviewers) {
+            prReviewers = prTemplateNode.reviewers;
+        }
+        if (prTeamReviewers.length === 0
+            && prTemplateNode['team-reviewers']) {
+            prTeamReviewers = prTemplateNode['team-reviewers'];
+        }
+        if (prLabels.length === 0 && prTemplateNode.labels) {
+            prLabels = prTemplateNode.labels;
         }
         console.log('prAssignees:', prAssignees);
         console.log('prReviewers:', prReviewers);
@@ -186,8 +193,11 @@ async function main(): Promise<void> {
         core.setOutput('pull-request-url', pullRequest.url);
 
         // add or update a review comment to store useful transitional informations.
-        const infoCommentTemplate = await loadTemplate<infoCommentTemplate>(owner, repo, headBranch, 'templates/pr-info-comment.yml');
-        const infoCommentBody = replace(infoCommentTemplate.body);
+        const commentHashTag = '#info-comment';
+        const infoCommentTemplate = templateYaml['info-comment'];
+        const infoCommentBody = infoCommentTemplate
+            && infoCommentTemplate.body
+            && replace(infoCommentTemplate.body);
         // get comments and filter by github bot author:
         // login: github-actions[bot]
         // id: 41898282
@@ -197,7 +207,8 @@ async function main(): Promise<void> {
             issue_number: pullRequest.number
         });
         const [infoComment] = prListCommentResponse.data.filter(comment => {
-            return comment.user.login === 'github-actions[bot]' || comment.user.id === 41898282;
+            return comment.body_text.startsWith(commentHashTag)
+                && (comment.user.login === 'github-actions[bot]' || comment.user.id === 41898282);
         });
 
         // info comment is found, update it.
@@ -206,7 +217,7 @@ async function main(): Promise<void> {
                 owner: owner,
                 repo: repo,
                 comment_id: infoComment.id,
-                body: infoCommentBody
+                body: `${commentHashTag} ${infoCommentBody}`
             });
         }
         // otherwise, add a comment
@@ -215,7 +226,7 @@ async function main(): Promise<void> {
                 owner: owner,
                 repo: repo,
                 issue_number: pullRequest.number,
-                body: infoCommentBody
+                body: `${commentHashTag} ${infoCommentBody}`
             });
         }
         // add assignee if needed

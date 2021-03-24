@@ -93,6 +93,7 @@ jobs:
         uses: JaydenLiang/github-actions-versioning-pr@main
         with:
           base-branch: ${{ github.event.inputs.base-branch }}
+          base-branch: ${{ github.event.inputs.base-branch }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
           prerelease: ${{ steps['create-branch'].outputs['is-prerelease'] }}
           pr-create-draft: true

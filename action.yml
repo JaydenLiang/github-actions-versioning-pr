@@ -5,7 +5,10 @@ inputs:
     description: >-
       The base branch that the pull request is issued against.
     required: true
-    default: main
+  head-branch:
+    description: >-
+      The head branch that the pull request is issued against.
+    required: true
   github-token:
     description: >-
       The GitHub token to authorize actions on behalf of users.
