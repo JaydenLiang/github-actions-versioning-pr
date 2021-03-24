@@ -90,7 +90,7 @@ jobs:
       # open a versioning pull request for review
       - name: versioning pr
         id: versioning-pr
-        uses: JaydenLiang/github-actions-versioning-pr@1.0.1-dev.35
+        uses: JaydenLiang/github-actions-versioning-pr@1.0.1-dev.36
         with:
           base-branch: ${{ github.event.inputs.base-branch }}
           head-branch: ${{ steps['create-branch'].outputs['head-branch'] }}
