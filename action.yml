@@ -13,12 +13,6 @@ inputs:
     description: >-
       The GitHub token to authorize actions on behalf of users.
     required: true
-  prerelease:
-    description: >-
-      A boolean indicator for creating a prerelease. GitHub 'pre-release' flag will also be set
-      accordingly. Accepted inputs: true, false.
-    required: false
-    default: 'false'
   pr-assignees:
     description: >-
       A comma-separated list of the assignees (usernames) for the pull request.
@@ -47,7 +41,6 @@ inputs:
       If pr-template-uri is also used, this parameter will override the 'labels' field in the template.
       If none should be set, giving a single comma as value to this field.
     required: false
-    default: 'versioning-pr'
   pr-reviewers:
     description: >-
       A comma-separated list of the reviewers (usernames) for the pull request.

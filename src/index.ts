@@ -3,6 +3,7 @@ import * as github from '@actions/github';
 import axios, { AxiosRequestConfig } from 'axios';
 import StatusCodes from 'http-status-codes';
 import path from 'path';
+import semver from 'semver';
 import yaml from 'yaml';
 
 interface PrTemplate {
@@ -14,9 +15,6 @@ interface PrTemplate {
         'team-reviewers'?: string[];
         labels?: string[];
     };
-    "info-comment"?: {
-        body: string;
-    }
     [key: string]: unknown;
 }
 
@@ -72,7 +70,6 @@ async function main(): Promise<void> {
         const baseBranch = core.getInput('base-branch') || '';
         const headBranch = core.getInput('head-branch') || '';
         const defaultBranch = String(github.context.payload.repository.default_branch) || 'main';
-        const isPrerelease = core.getInput('prerelease') || '';
         const prCreateDraft = core.getInput('pr-create-draft') || '';
         const prFailIfExist = core.getInput('pr-fail-if-exist') || '';
         let prTemplateUri = core.getInput('pr-template-uri') || '';
@@ -97,6 +94,8 @@ async function main(): Promise<void> {
         console.log(`Fetching package.json from: ${owner}/${repo}/${headBranch}`);
         const headPackageJson: { [key: string]: unknown } = await fetchPackageJson(owner, repo, headBranch);
         const headVersion = headPackageJson.version as string;
+        const headSemver = semver.parse(headVersion);
+        const isPrerelease = headSemver.prerelease.length > 0;
         // fetch pr-template yaml
         // NOTE: if a custom location is specified, use the custom location
         // otherwise, use the common template located in .github/workflows/templates/versioning-pr.yml
@@ -136,7 +135,7 @@ async function main(): Promise<void> {
                 .replace(new RegExp('\\${base-version}', 'g'), baseVersion)
                 .replace(new RegExp('\\${head-branch}', 'g'), headBranch)
                 .replace(new RegExp('\\${head-version}', 'g'), headVersion)
-                .replace(new RegExp('\\${is-prerelease}', 'g'), isPrerelease);
+                .replace(new RegExp('\\${is-prerelease}', 'g'), isPrerelease && 'true' || 'false');
         };
         prTitle = replace(prTitle);
         prDescription = replace(prDescription);
@@ -196,43 +195,6 @@ async function main(): Promise<void> {
         core.setOutput('pull-request-number', pullRequest.number);
         core.setOutput('pull-request-url', pullRequest.url);
 
-        // add or update a review comment to store useful transitional informations.
-        const commentHashTag = '#info-comment';
-        const infoCommentTemplate = templateYaml['info-comment'];
-        const infoCommentBody = infoCommentTemplate
-            && infoCommentTemplate.body
-            && replace(infoCommentTemplate.body) || '';
-        // get comments and filter by github bot author:
-        // login: github-actions[bot]
-        // id: 41898282
-        const prListCommentResponse = await octokit.issues.listComments({
-            owner: owner,
-            repo: repo,
-            issue_number: pullRequest.number
-        });
-        const [infoComment] = prListCommentResponse.data.filter(comment => {
-            return comment.body_text.startsWith(commentHashTag)
-                && (comment.user.login === 'github-actions[bot]' || comment.user.id === 41898282);
-        });
-
-        // info comment is found, update it.
-        if (infoComment) {
-            await octokit.issues.updateComment({
-                owner: owner,
-                repo: repo,
-                comment_id: infoComment.id,
-                body: `${commentHashTag} ${infoCommentBody}`
-            });
-        }
-        // otherwise, add a comment
-        else {
-            await octokit.issues.createComment({
-                owner: owner,
-                repo: repo,
-                issue_number: pullRequest.number,
-                body: `${commentHashTag} ${infoCommentBody}`
-            });
-        }
         // add assignee if needed
         const assignees: string[] = [];
         if (prAssignees.length) {
