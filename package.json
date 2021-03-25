@@ -1,6 +1,6 @@
 {
   "name": "github-actions-versioning-pr",
-  "version": "1.0.1-dev.37",
+  "version": "1.0.1-dev.38",
   "description": "",
   "main": "dist/bin/index.js",
   "types": "dist/types",
